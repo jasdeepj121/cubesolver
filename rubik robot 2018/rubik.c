@@ -10,9 +10,10 @@
 #include<string.h>
 #include<avr/wdt.h>
 #define quatrotate 50 // ((360/1.8)/4)
-#define mot_delay 5
+#define mot_delay 4
 #define servoretract 500
 #define halfrotate 100
+#define scan_delay 500
 #define fosc 16000000
 
 int i,j,k,l;
@@ -86,8 +87,11 @@ void setup(){
 	fvertical =1;
 	rvertical =1;
 	bvertical =1;
+	lclaw=0;
+	fclaw=0;
+	bclaw=0;
+	rclaw=0;
 }
-
 
 void motor(unsigned char mot,unsigned char dir){
 	/* STEPPER MOTOR CONTROL PINS
@@ -427,7 +431,6 @@ void sendchar_uart(unsigned char data)
   UDR = data; // As soon as the buffer is empty, put the data in UDR
 }
 
-
 unsigned char getchar_uart(void)
 {
   unsigned char data;
@@ -435,7 +438,6 @@ unsigned char getchar_uart(void)
   data=UDR;	// Read the data from UDR, as soon as the data arrives
   return data;
 }
-
 
 void straightfront(){
 	if(!fvertical){
@@ -447,7 +449,6 @@ void straightfront(){
 	}
 }
 
-
 void straightleft(){
 	if(!lvertical){
 		leftclaw(0);
@@ -457,7 +458,6 @@ void straightleft(){
 		_delay_ms(servoretract);
 	}
 }
-
 
 void straightright(){
 	if(!rvertical){
@@ -469,7 +469,6 @@ void straightright(){
 	}
 }
 
-
 void straightback(){
 	if(!bvertical){
 		backclaw(0);
@@ -479,7 +478,6 @@ void straightback(){
 		_delay_ms(servoretract);
 	}
 }
-
 
 void move_generator(char input[]){
 	int x;
@@ -724,7 +722,6 @@ void move_generator(char input[]){
 	}
 }
 
-
 void sendstring_uart(char v[])
 {
 	unsigned int i;
@@ -735,16 +732,13 @@ void sendstring_uart(char v[])
 	}
 }
 
-
 void enable_stepper(){
 	PORTD &= ~(1<<PIND7);
 }
 
-
 void disable_stepper(){
 	PORTD |= 1<<PIND7;
 }
-
 
 void reset(){
 	wdt_enable(WDTO_15MS);
@@ -752,28 +746,64 @@ void reset(){
 	  }
 }
 
-
 void scan_cube(){
-	//scanU
-	_delay_ms(500);
-	move_generator("XA");
+//	//scanU
+//	_delay_ms(scan_delay);
+//	move_generator("XA");
+//	//scanF
+//	_delay_ms(scan_delay);
+//	move_generator("YC");
+//	//scanL
+//	_delay_ms(scan_delay);
+//	move_generator("YC");
+//	//scanB
+//	_delay_ms(scan_delay);
+//	move_generator("YC");
+//	//scanR
+//	_delay_ms(scan_delay);
+//	move_generator("YC");
+//	_delay_ms(scan_delay);
+//	move_generator("XA");
+//	//scanD
+//	_delay_ms(scan_delay);
+//	move_generator("XH");
+
+	// scanning order -> FRBLDU
+
 	//scanF
-	_delay_ms(500);
-	move_generator("YC");
-	//scanL
-	_delay_ms(500);
-	move_generator("YC");
-	//scanB
-	_delay_ms(500);
-	move_generator("YC");
+	//sendchar_uart('z');
+
 	//scanR
-	_delay_ms(500);
-	move_generator("YC");
-	_delay_ms(500);
-	move_generator("XA");
+	if(getchar_uart()=='n'){
+	move_generator("YA");
+	sendchar_uart('d');
+	}
+
+	//scanB
+	if(getchar_uart()=='n'){
+		move_generator("YA");
+		sendchar_uart('z');
+	}
+
+	//scanL
+	if(getchar_uart()=='n'){
+		move_generator("YA");
+		sendchar_uart('z');
+	}
+
 	//scanD
-	_delay_ms(500);
-	move_generator("XH");
+	if(getchar_uart()=='n'){
+		move_generator("YA");
+		move_generator("XA");
+		sendchar_uart('z');
+	}
+
+	//scanU
+	if(getchar_uart()=='n'){
+		move_generator("XH");
+		sendchar_uart('z');
+	}
+
 }
 
 int main(){
@@ -806,13 +836,13 @@ int main(){
 				cnt++;
 			}while(inp_str[cnt-1] != 'e');
 //			_delay_ms(5);
-			sendstring_uart("string received ");
-			_delay_ms(5);
-			sendstring_uart(inp_str);
+//			sendstring_uart("string received ");
+//			_delay_ms(5);
+//			sendstring_uart(inp_str);
 			enable_stepper();
 			move_generator(inp_str);
 			disable_stepper();
-			sendstring_uart("Cube PROBABLY solved!!");
+			sendstring_uart("d");
 			reset();
 		}
 	}
