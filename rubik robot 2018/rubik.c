@@ -776,7 +776,7 @@ void scan_cube(){
 	//scanR
 	if(getchar_uart()=='n'){
 	move_generator("YA");
-	sendchar_uart('d');
+	sendchar_uart('z');
 	}
 
 	//scanB
