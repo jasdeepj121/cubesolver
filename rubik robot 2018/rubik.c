@@ -10,14 +10,15 @@
 #include<string.h>
 #include<avr/wdt.h>
 #define quatrotate 50 // ((360/1.8)/4)
-#define mot_delay 4
-#define servoretract 500
+#define mot_delay 1
+#define servoretract 120
 #define halfrotate 100
 #define scan_delay 500
 #define fosc 16000000
 
 int i,j,k,l;
 int lclaw,fclaw,bclaw,rclaw;
+//unsigned char clawl,clawb,clawf,clawr;
 int fvertical,lvertical,bvertical,rvertical;
 
 void frontclaw(int pos){
@@ -54,6 +55,7 @@ void backclaw(int pos){
 }
 
 void rightclaw(int pos){
+
 	if(pos == 1){
 		PORTB |= 1<<PINB3;
 		rclaw =1;
@@ -63,6 +65,54 @@ void rightclaw(int pos){
 		rclaw =0;
 	}
 }
+
+//void claw(unsigned char face,unsigned char pos){
+////	1 -> c
+////	0 -> o
+//	if(face == 'F'){
+//		if(pos == 'c'){
+//				PORTB |= 1<<PINB0;
+//				clawf = 1;
+//			}
+//		else {
+//			PORTB &=~(1<<PINB0);
+//			clawf = 0;
+//		}
+//	}
+//	else if(face == 'B'){
+//		if(pos == 'c'){
+//			PORTB |= 1<<PINB2;
+//			clawb = 1;
+//		}
+//		else{
+//			PORTB &=~(1<<PINB2);
+//			clawb = 0;
+//		}
+//	}
+//	else if(face == 'R'){
+//		if(pos == 'c'){
+//			PORTB |= 1<<PINB3;
+//			clawr = 1;
+//		}
+//		else{
+//			PORTB &=~(1<<PINB3);
+//			clawr = 0;
+//		}
+//	}
+//	else if(face == 'L'){
+//		if(pos == 'c'){
+//				PORTB |= 1<<PINB1;
+//				clawl = 1;
+//			}
+//			else {
+//				PORTB &=~(1<<PINB1);
+//				clawl = 0;
+//			}
+//	}
+//
+//
+//}
+
 void setup(){
 	DDRA = 0xFF;
 	DDRB = 0xFF;
@@ -73,10 +123,10 @@ void setup(){
 
 
 	//SERIAL INTERFACE SETUP
-//	UBRRH = 0x00;   //FOR 9600 BAUD RATE
-//	UBRRL = 103		//FOR 9600 BAUD RATE
-	UBRRH = 1; 		//FOR 2400 BAUD RATE
-	UBRRL = 160;  	//FOR 2400 BAUD RATE
+	UBRRH = 0x00;   //FOR 9600 BAUD RATE
+	UBRRL = 103;		//FOR 9600 BAUD RATE
+//	UBRRH = 1; 		//FOR 2400 BAUD RATE
+//	UBRRL = 160;  	//FOR 2400 BAUD RATE
 //	UBRRH = 0; 		//FOR 250000 BAUD RATE
 //	UBRRL = 3;  	//FOR 250000 BAUD RATE
 
@@ -91,6 +141,10 @@ void setup(){
 	fclaw=0;
 	bclaw=0;
 	rclaw=0;
+//	claw('F','o');
+//	claw('R','o');
+//	claw('B','o');
+//	claw('L','o');
 }
 
 void motor(unsigned char mot,unsigned char dir){
@@ -126,10 +180,10 @@ if( mot == 'F'){
 			PORTA ^= 1<<PINA0 ;
 			_delay_ms(mot_delay);
 		}
-	if(fvertical)
-		fvertical = 0;
-	else
-		fvertical = 1;
+		if(fvertical)
+			fvertical = 0;
+		else
+			fvertical = 1;
 	}
 	else if ( dir == 'A'){
 		PORTA &= ~(1<<PINA1);
@@ -425,10 +479,10 @@ else if( mot == 'Y'){
 }
 }
 
-void sendchar_uart(unsigned char data)
+void sendchar_uart(char data)
 {
   while ((UCSRA & 0x20) == 0x00);  // Wait until the transmit buffer is empty
-  UDR = data; // As soon as the buffer is empty, put the data in UDR
+  UDR = (unsigned char)data; // As soon as the buffer is empty, put the data in UDR
 }
 
 unsigned char getchar_uart(void)
@@ -483,6 +537,21 @@ void move_generator(char input[]){
 	int x;
 	for(x=0;x<strlen(input);x++){
 			if(input[x] == 'F'){
+				if(!lvertical && (!rvertical)){
+					if(!bvertical){
+						backclaw(0);
+						_delay_ms(servoretract);
+						motor('B','C');
+						backclaw(1);
+					}
+					leftclaw(0);
+					rightclaw(0);
+					_delay_ms(servoretract);
+					motor('X','H');
+					leftclaw(1);
+					rightclaw(1);
+
+				}
 				if(!lvertical){
 					if(!bvertical){
 						backclaw(0);
@@ -512,23 +581,24 @@ void move_generator(char input[]){
 					frontclaw(1);
 				}
 				_delay_ms(servoretract);
-//				if(input[x+1] == 'C'){
-//					motor('F','C');
-//					x+=1;
-//				}
-//				else if(input[x+1] == 'A'){
-//					motor('F','A');
-//					x+=1;
-//				}
-//				else if(input[x+1] == 'H'){
-//					motor('F','H');
-//					x+=1;
-//				}
-
 				motor('F',input[x+1]);
 			}
 
 			else if (input[x] == 'L'){
+				if(!fvertical && (!bvertical)){
+					if(!rvertical){
+						rightclaw(0);
+						_delay_ms(servoretract);
+						motor('R','C');
+						rightclaw(1);
+					}
+					backclaw(0);
+					frontclaw(0);
+					_delay_ms(servoretract);
+					motor('Y','H');
+					backclaw(1);
+					frontclaw(1);
+					}
 				if(!fvertical){
 					if(!rvertical){
 						rightclaw(0);
@@ -558,21 +628,23 @@ void move_generator(char input[]){
 					backclaw(1);
 				}
 				_delay_ms(servoretract);
-//				if(input[x+1] == 'C'){
-//					motor('L','C');
-//					x+=1;
-//				}
-//				else if(input[x+1] == 'A'){
-//					motor('L','A');
-//					x+=1;
-//				}
-//				else if(input[x+1] == 'H'){
-//					motor('L','H');
-//					x+=1;
-//				}
 				motor('L',input[x+1]);
 			}
 			else if (input[x] == 'R'){
+				if(!fvertical && (!bvertical)){
+					if(!lvertical){
+						leftclaw(0);
+						_delay_ms(servoretract);
+						motor('L','C');
+						leftclaw(1);
+					}
+					backclaw(0);
+					frontclaw(0);
+					_delay_ms(servoretract);
+					motor('Y','H');
+					backclaw(1);
+					frontclaw(1);
+					}
 				if(!fvertical){
 					if(lvertical){
 						leftclaw(0);
@@ -602,20 +674,23 @@ void move_generator(char input[]){
 					backclaw(1);
 				}
 				_delay_ms(servoretract);
-				/*
-				if(input[x+1] == 'C'){
-					motor('R','C');
-				}
-				else if(input[x+1] == 'A'){
-					motor('R','A');
-				}
-				else if(input[x+1] == 'H'){
-					motor('R','H');
-				}
-				*/
 				motor('R',input[x+1]);
 			}
 			else if(input[x] == 'B'){
+				if(!lvertical && (!rvertical)){
+					if(!fvertical){
+						frontclaw(0);
+						_delay_ms(servoretract);
+						motor('F','C');
+						frontclaw(1);
+					}
+					leftclaw(0);
+					rightclaw(0);
+					_delay_ms(servoretract);
+					motor('X','H');
+					leftclaw(1);
+					rightclaw(1);
+					}
 				if(!lvertical){
 					if(!fvertical){
 						frontclaw(0);
@@ -645,40 +720,23 @@ void move_generator(char input[]){
 					backclaw(1);
 				}
 				_delay_ms(servoretract);
-//				if(input[x+1] == 'C'){
-//					motor('B','C');
-//					x+=1;
-//				}
-//				else if(input[x+1] == 'A'){
-//					motor('B','A');
-//					x+=1;
-//				}
-//				else if(input[x+1] == 'H'){
-//					motor('B','H');
-//					x+=1;
-//				}
 				motor('B',input[x+1]);
 			}
 			else if (input[x] == 'X'){
 				if(!fvertical && (!bvertical)){
 					frontclaw(0);
 					backclaw(0);
-					_delay_ms(servoretract/2);
+					_delay_ms(servoretract);
 					motor('Y','C');
 				}
 				else if(!fvertical){
 					frontclaw(0);
-					_delay_ms(servoretract/2);
+					_delay_ms(servoretract);
 					motor('F','C');
 				}
-//				else{
-//					backclaw(0);
-//					_delay_ms(servoretract/2);
-//					motor('B','C');
-//				}
 				else if (!bvertical){
 					backclaw(0);
-					_delay_ms(servoretract/2);
+					_delay_ms(servoretract);
 					motor('B','C');
 				}
 				_delay_ms(servoretract);
@@ -693,22 +751,17 @@ void move_generator(char input[]){
 				if(!lvertical && (!rvertical)){
 					leftclaw(0);
 					rightclaw(0);
-					_delay_ms(servoretract/2);
+					_delay_ms(servoretract);
 					motor('X','C');
 								}
 				else if(!rvertical){
 					rightclaw(0);
-					_delay_ms(servoretract/2);
+					_delay_ms(servoretract);
 					motor('R','C');
 				}
-//				else{
-//					leftclaw(0);
-//					_delay_ms(servoretract/2);
-//					motor('L','C');
-//				}
 				else if (!lvertical){
 					leftclaw(0);
-					_delay_ms(servoretract/2);
+					_delay_ms(servoretract);
 					motor('L','C');
 				}
 				_delay_ms(servoretract);
@@ -722,15 +775,15 @@ void move_generator(char input[]){
 	}
 }
 
-void sendstring_uart(char v[])
-{
-	unsigned int i;
-	for(i=0;i<strlen(v);i++)
-	{
-		sendchar_uart((unsigned char) v[i]);
-		_delay_ms(2);
-	}
-}
+//void sendstring_uart(char v[])
+//{
+//	unsigned int i;
+//	for(i=0;i<strlen(v);i++)
+//	{
+//		sendchar_uart((unsigned char) v[i]);
+//		_delay_ms(2);
+//	}
+//}
 
 void enable_stepper(){
 	PORTD &= ~(1<<PIND7);
@@ -747,60 +800,41 @@ void reset(){
 }
 
 void scan_cube(){
-//	//scanU
-//	_delay_ms(scan_delay);
-//	move_generator("XA");
-//	//scanF
-//	_delay_ms(scan_delay);
-//	move_generator("YC");
-//	//scanL
-//	_delay_ms(scan_delay);
-//	move_generator("YC");
-//	//scanB
-//	_delay_ms(scan_delay);
-//	move_generator("YC");
-//	//scanR
-//	_delay_ms(scan_delay);
-//	move_generator("YC");
-//	_delay_ms(scan_delay);
-//	move_generator("XA");
-//	//scanD
-//	_delay_ms(scan_delay);
-//	move_generator("XH");
-
-	// scanning order -> FRBLDU
-
-	//scanF
-	//sendchar_uart('z');
-
-	//scanR
-	if(getchar_uart()=='n'){
-	move_generator("YA");
-	sendchar_uart('z');
-	}
-
 	//scanB
+
 	if(getchar_uart()=='n'){
 		move_generator("YA");
 		sendchar_uart('z');
+		//scanL
 	}
 
-	//scanL
 	if(getchar_uart()=='n'){
 		move_generator("YA");
 		sendchar_uart('z');
+		//scanF
 	}
 
-	//scanD
 	if(getchar_uart()=='n'){
 		move_generator("YA");
-		move_generator("XA");
 		sendchar_uart('z');
+		//scanR
 	}
 
-	//scanU
+	if(getchar_uart()=='n'){
+		move_generator("XC");
+		sendchar_uart('z');
+		//scanU
+	}
+
 	if(getchar_uart()=='n'){
 		move_generator("XH");
+		sendchar_uart('z');
+		//scanD
+	}
+
+	if(getchar_uart()=='n'){
+		move_generator("XC");
+		move_generator("YC");
 		sendchar_uart('z');
 	}
 
@@ -824,7 +858,7 @@ int main(){
 			enable_stepper();
 			scan_cube();
 			disable_stepper();
-			sendstring_uart("b");
+			sendchar_uart('b');
 			_delay_ms(50);
 		}
 		else{
@@ -834,15 +868,11 @@ int main(){
 				chr = (char)getchar_uart();
 				inp_str[cnt] = chr;
 				cnt++;
-			}while(inp_str[cnt-1] != 'e');
-//			_delay_ms(5);
-//			sendstring_uart("string received ");
-//			_delay_ms(5);
-//			sendstring_uart(inp_str);
+			}while(inp_str[cnt-1] != 'e' && cnt < 150);
 			enable_stepper();
 			move_generator(inp_str);
 			disable_stepper();
-			sendstring_uart("d");
+			sendchar_uart('d');
 			reset();
 		}
 	}
